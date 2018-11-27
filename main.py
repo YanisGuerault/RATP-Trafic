@@ -15,19 +15,15 @@ def Telecharge(nomfichier,varURL):
     with urllib.request.urlopen(varURL) as response, open(nomfichier+"."+str(response.url.split('format=')[1].split('&')[0]), 'wb') as out_file:
         shutil.copyfileobj(response, out_file)
 
-def CreerMap():
+def CreerDico(annee):
     files = [ 'GARES-METRO.json',
           'GARES-RER.json',
           'trafic.json' ]
-
-    coords = (48.7190835,2.4609723)
-    map = folium.Map(location=coords, tiles='OpenStreetMap', zoom_start=9)
-
     global datastationtrafic
     datastationtrafic = dict()
     global datastationposition
     datastationposition = dict()
-    Telecharge("trafic","https://data.ratp.fr/explore/dataset/trafic-annuel-entrant-par-station-du-reseau-ferre-2017/download/?format=json&timezone=Europe/Berlin")
+    Telecharge("trafic","https://data.ratp.fr/explore/dataset/trafic-annuel-entrant-par-station-du-reseau-ferre-"+str(annee)+"/download/?format=json&timezone=Europe/Berlin")
     Telecharge("GARES-METRO","https://opendata.stif.info/explore/dataset/emplacement-des-gares-idf/download/?format=json&refine.mode=Metro&timezone=Europe/Berlin")
     Telecharge("GARES-RER","https://opendata.stif.info/explore/dataset/emplacement-des-gares-idf/download/?format=json&refine.mode=RER&timezone=Europe/Berlin")
 
@@ -45,6 +41,11 @@ def CreerMap():
                 datastationtrafic[to['fields']['station']] = to['fields']
         f.close()
 
+def CreerMap(annee):
+    CreerDico(annee)
+    coords = (48.7190835,2.4609723)
+    map = folium.Map(location=coords, tiles='OpenStreetMap', zoom_start=9)
+
     cmp = 0
     cmp2 = 0
     for station in datastationposition:
@@ -61,7 +62,7 @@ def CreerMap():
                 cmp=cmp+1
                 icon=folium.Icon(color='white')
                 if(datastationposition[station]['type'] == "RER"):
-                     icon=folium.Icon(color='lightgray', prefix='fa',icon='train')
+                     icon=folium.Icon(color='green', prefix='fa',icon='train')
                 else:
                     icon=folium.Icon(color='cadetblue', prefix='fa',icon='subway')
                 iframe = stationNameTrafic
@@ -75,7 +76,6 @@ def CreerMap():
     print(cmp2)
 
     map.save(outfile='trafic-metro-rer.html')
-    webbrowser.open('trafic-metro-rer.html') 
-
-CreerMap()
+    chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s'
+    webbrowser.get(chrome_path).open('trafic-metro-rer.html') 
 #help(folium.Icon)
