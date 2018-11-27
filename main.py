@@ -1,3 +1,49 @@
+import folium,branca,json
+import numpy as np # import package
+import matplotlib.pyplot as plt # import module
+import math
+import tkinter as tk
+from tkinter import *
+
+annee = 2017
+# filedialog is used in this case to save the file path selected by the user.
+#from tkinter import filedialog
+
+#Rapport : les deux figures + commentaires + Intro + Conclusion, cadre, pq on l'a choisit, ce que ca nous a apporté.
+"""files = [ 'Trafic.json']
+
+datastation = dict()
+for file in files:
+    f = open(file, 'r', encoding='utf8')
+    g = json.loads(f.read())
+    if(file.split(".")[1] == "geojson"):
+        geo_data["features"].extend((g["features"])) # add current geojson data to master dict
+    elif(file.split(".")[1] == "json"):
+        for to in g:
+            datastation[to['fields']['station']] = to['fields']
+    f.close()"""
+
+#print(datastation['GARE DU NORD']['trafic'])
+
+""" Histogramme """
+def CreerHisto(annee):
+    CreerDico(annee)
+    l = []
+    for k in datastationtrafic.keys():
+        l.append(datastationtrafic[k]['trafic'])
+    
+    b = list(range(0,56000000,1000000))
+    n, bins, patches = plt.hist(l, bins=b,facecolor='g')
+	
+    plt.xlabel('Trafic (en dizaine de millions)')
+    plt.ylabel('Nombre de stations')
+    plt.title('Nombre de stations en fonction du nombre de personnes')
+	
+    string = "Moyenne="+str(np.mean(l))+",\nEcartType="+str(np.std(l))+"\nMediane="+str(np.median(l))
+    plt.text(30000000, 70, string)
+    plt.show()
+""" Fin Histogramme """
+
 import folium,branca,json,unicodedata,urllib.request,shutil,requests,os, webbrowser
 from os.path import basename
 
@@ -78,4 +124,31 @@ def CreerMap(annee):
     map.save(outfile='trafic-metro-rer.html')
     chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s'
     webbrowser.get(chrome_path).open('trafic-metro-rer.html') 
-#help(folium.Icon)
+#Tk allows you to register and unregister a callback function which will be called from the Tk mainloop when I/O is possible on a file descriptor
+def CreerGUI():
+    mainw= Tk()
+    mainw.title('Trafic des stations RATP en 2017')
+    ANNEES = [
+        "2017",
+        "2016",
+        "2015",
+        "2014"
+    ]
+    anneeselect = StringVar()
+    anneeselect.set(ANNEES[0])
+    w = OptionMenu(mainw,anneeselect,*ANNEES).pack()
+    # create Button that link to methods used to process said file.
+    tk.Button(mainw, text="Carte", command= lambda: CreerMap(anneeselect.get()),padx = 150, pady = 50).pack()
+    tk.Button(mainw, text="Histo", command= lambda: CreerHisto(anneeselect.get()),padx = 150, pady = 50).pack()
+
+    """menubar = Menu(fenetre)
+    menu1 = Menu(mainw, tearoff=0)
+    menu1.add_command(label="2014")
+    menu1.add_command(label="2015")
+    menu1.add_command(label="2016")
+    fenetre.config(menu=menubar)"""
+    mainw.mainloop()
+
+
+CreerGUI()
+
