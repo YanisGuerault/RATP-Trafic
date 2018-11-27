@@ -1,69 +1,78 @@
-import folium,branca,json
+import folium,branca,json,unicodedata,urllib.request,shutil,requests
+from os.path import basename
 
-files = [ 'GARES-RER.geojson',
-          'GARES-METRO.geojson',
+def supprime_accent(string):
+        """ supprime les accents du texte source """
+        accent = ['É','é']
+        sans_accent = ['E','e']
+        i = 0
+        while i < len(accent):
+            string = string.replace(accent[i], sans_accent[i])
+            i += 1
+        return string
+
+def Telecharge(nomfichier,varURL):
+    with urllib.request.urlopen(varURL) as response, open(nomfichier+"."+str(response.url.split('format=')[1].split('&')[0]), 'wb') as out_file:
+        shutil.copyfileobj(response, out_file)
+
+def CreerMap():
+    files = [ 'GARES-METRO.json',
+          'GARES-RER.json',
           'trafic.json' ]
-#files = ['france-geojson-master/departements/75-paris/communes-75-paris.geojson',
-    #'france-geojson-master/departements/77-seine-et-marne/communes-77-seine-et-marne.geojson',
-    #'france-geojson-master/departements/78-yvelines/communes-78-yvelines.geojson',
-    #'france-geojson-master/departements/91-essonne/communes-91-essonne.geojson',
-    #'france-geojson-master/departements/92-hauts-de-seine/communes-92-hauts-de-seine.geojson',
-    #'france-geojson-master/departements/93-seine-saint-denis/communes-93-seine-saint-denis.geojson',
-    #'france-geojson-master/departements/94-val-de-marne/communes-94-val-de-marne.geojson',
-    #'france-geojson-master/departements/95-val-d-oise/communes-95-val-d-oise.geojson']
 
-""" coords = (48.7453229,2.5073644)
-map = folium.Map(location=coords, tiles='OpenStreetMap', zoom_start=9)
+    coords = (48.7190835,2.4609723)
+    map = folium.Map(location=coords, tiles='OpenStreetMap', zoom_start=9)
 
-#style function
-sf = lambda x :{'fillColor':'#E88300', 'fillOpacity':0.5, 'color':'#E84000', 'weight':1, 'opacity':1}
+    datastationtrafic = dict()
+    datastationposition = dict()
+    Telecharge("trafic","https://data.ratp.fr/explore/dataset/trafic-annuel-entrant-par-station-du-reseau-ferre-2017/download/?format=json&timezone=Europe/Berlin")
+    Telecharge("GARES-METRO","https://opendata.stif.info/explore/dataset/emplacement-des-gares-idf/download/?format=json&refine.mode=Metro&timezone=Europe/Berlin")
+    Telecharge("GARES-RER","https://opendata.stif.info/explore/dataset/emplacement-des-gares-idf/download/?format=json&refine.mode=RER&timezone=Europe/Berlin")
 
-i = 0
+    for file in files:
+        f = open(file, 'r', encoding='utf8')
+        g = json.loads(f.read())
+        if(file.split("-")[0] == "GARES"):
+            for to in g:
+                if(to['fields']['nomlong'] in datastationposition and to['fields']['reseau'] == "RER"):
+                    datastationposition[to['fields']['nomlong']+"-RER"] = {"type":to['fields']['reseau'],"coordonnes":to['fields']['geo_point_2d'],"nom_gare":to['fields']['nom_gare'],"num_gare":to['fields']['gares_id'],"ligne":to['fields']['ligne']}
+                else:
+                    datastationposition[to['fields']['nomlong']] = {"type":to['fields']['reseau'],"coordonnes":to['fields']['geo_point_2d'],"nom_gare":to['fields']['nom_gare'],"num_gare":to['fields']['gares_id'],"ligne":to['fields']['ligne']}
+        else:
+            for to in g:
+                datastationtrafic[to['fields']['station']] = to['fields']
+        f.close()
 
-for overlay in files :
+    cmp = 0
+    cmp2 = 0
+    for station in datastationposition:
+        for trafic in datastationtrafic:
+            stationNameTrafic = supprime_accent(trafic).upper()
+            stationNameCoorLong = supprime_accent(station).upper()
+            stationNameCoorNomGare = supprime_accent(datastationposition[station]["nom_gare"]).upper()
 
-    folium.GeoJson(
-        data=overlay,
-        name=overlay,
-        popup="CCC",
-        style_function= sf
-    ).add_to(map)
-    print(i)
-    i=i+1 """
+            if(stationNameTrafic[-3:]== "RER"):
+                stationNameTrafic = stationNameTrafic[:-4]
+            if(stationNameCoorLong == "2"):
+                print(str(datastationposition[station]))
+            if((stationNameTrafic == stationNameCoorLong or stationNameCoorNomGare == stationNameTrafic) or (stationNameTrafic in stationNameCoorLong or stationNameTrafic in stationNameCoorNomGare)):
+                cmp=cmp+1
+                icon=folium.Icon(color='white')
+                if(datastationposition[station]['type'] == "RER"):
+                     icon=folium.Icon(color='lightgray', icon='train')
+                else:
+                    icon=folium.Icon(color='cadetblue', icon='subway')
+                iframe = stationNameTrafic
+                folium.Marker(
+                location=datastationposition[station]['coordonnes'],
+                popup=datastationposition[station]['type']+" : "+str(datastationtrafic[trafic]['trafic']),
+                icon=icon
+                ).add_to(map)
+                print(str(datastationposition[station]['nom_gare']))
+    print(cmp)
+    print(cmp2)
 
-coords = (48.7190835,2.4609723)
-map = folium.Map(location=coords, tiles='OpenStreetMap', zoom_start=9)
+    map.save(outfile='trafic-metro-rer.html')
 
-geo_data = {"type": "FeatureCollection", "features": []} # master dict structure
-datastation = dict()
-for file in files:
-    f = open(file, 'r', encoding='utf8')
-    g = json.loads(f.read())
-    if(file.split(".")[1] == "geojson"):
-        geo_data["features"].extend((g["features"])) # add current geojson data to master dict
-    elif(file.split(".")[1] == "json"):
-        for to in g:
-            datastation[to['fields']['station']] = to['fields']
-    f.close()
-
-print(datastation['GARE DU NORD']['trafic'])
-"""map.choropleth(
-    geo_data=geo_data,
-    name='choropleth',
-    #data=datastation,
-    columns=['reseau', 'trafic'], # data key/value pair
-    #key_on='feature.properties.reseau', # corresponding layer in GeoJSON
-    fill_color='YlGn',
-    fill_opacity=0.7,
-    line_opacity=0.2,
-    legend_name='Population'
-)"""
-
-sf = lambda x :{'fillColor':'#E88300', 'fillOpacity':0.5, 'color':'#E84000', 'weight':1, 'opacity':1}
-folium.GeoJson(
-        data=geo_data,
-        name="BONSOIR",
-        style_function= sf
-    ).add_to(map)
-
-map.save(outfile='map.html')
+CreerMap()
+help(folium.Icon)
