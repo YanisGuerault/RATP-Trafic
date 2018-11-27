@@ -1,4 +1,4 @@
-import folium,branca,json,unicodedata,urllib.request,shutil,requests
+import folium,branca,json,unicodedata,urllib.request,shutil,requests,os, webbrowser
 from os.path import basename
 
 def supprime_accent(string):
@@ -23,7 +23,9 @@ def CreerMap():
     coords = (48.7190835,2.4609723)
     map = folium.Map(location=coords, tiles='OpenStreetMap', zoom_start=9)
 
+    global datastationtrafic
     datastationtrafic = dict()
+    global datastationposition
     datastationposition = dict()
     Telecharge("trafic","https://data.ratp.fr/explore/dataset/trafic-annuel-entrant-par-station-du-reseau-ferre-2017/download/?format=json&timezone=Europe/Berlin")
     Telecharge("GARES-METRO","https://opendata.stif.info/explore/dataset/emplacement-des-gares-idf/download/?format=json&refine.mode=Metro&timezone=Europe/Berlin")
@@ -59,9 +61,9 @@ def CreerMap():
                 cmp=cmp+1
                 icon=folium.Icon(color='white')
                 if(datastationposition[station]['type'] == "RER"):
-                     icon=folium.Icon(color='lightgray', icon='train')
+                     icon=folium.Icon(color='lightgray', prefix='fa',icon='train')
                 else:
-                    icon=folium.Icon(color='cadetblue', icon='subway')
+                    icon=folium.Icon(color='cadetblue', prefix='fa',icon='subway')
                 iframe = stationNameTrafic
                 folium.Marker(
                 location=datastationposition[station]['coordonnes'],
@@ -73,6 +75,7 @@ def CreerMap():
     print(cmp2)
 
     map.save(outfile='trafic-metro-rer.html')
+    webbrowser.open('trafic-metro-rer.html') 
 
 CreerMap()
-help(folium.Icon)
+#help(folium.Icon)
