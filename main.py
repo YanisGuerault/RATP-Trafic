@@ -139,7 +139,7 @@ def CreerGUI():
     w = OptionMenu(mainw,anneeselect,*ANNEES).pack()
 
     tk.Button(mainw, text="Carte", command= lambda: CreerMap(anneeselect.get()),padx = 150, pady = 50).pack()
-    tk.Button(mainw, text="Histo", command= lambda: CreerHisto(anneeselect.get()),padx = 150, pady = 50).pack()
+    tk.Button(mainw, text="Histogramme", command= lambda: CreerHisto(anneeselect.get()),padx = 150, pady = 50).pack()
     
     mainw.mainloop()
 
