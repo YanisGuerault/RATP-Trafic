@@ -46,6 +46,7 @@ def supprime_accent(string):
 def Telecharge(nomfichier,varURL):
     with urllib.request.urlopen(varURL) as response, open(nomfichier+"."+str(response.url.split('format=')[1].split('&')[0]), 'wb') as out_file:
         shutil.copyfileobj(response, out_file)
+		
 """Permet de creer (ou recreer) les dictionnaires des stations en fonction de l'année en paramètre"""
 def CreerDico(annee):
     files = [ 'GARES-METRO.json',
@@ -82,8 +83,11 @@ def CreerMap(annee):
     CreerDico(annee)
 
     coords = (48.858273, 2.347211)
-    map = folium.Map(location=coords, tiles='OpenStreetMap', zoom_start=13,min_zoom=12)
-
+    map = folium.Map(location=coords, tiles='openstreetmap', zoom_start=13,min_zoom=12)
+    
+    rer = folium.FeatureGroup(name='<span style=\\"color: green;\\">RER</span>')
+    metro = folium.FeatureGroup(name='<span style=\\"color: cadetblue;\\">Métro</span>')
+	
     for station in datastationposition:
         for trafic in datastationtrafic:
 
@@ -95,22 +99,24 @@ def CreerMap(annee):
                 stationNameTrafic = stationNameTrafic[:-4]
 
             if((stationNameTrafic == stationNameCoorLong or stationNameCoorNomGare == stationNameTrafic) or (stationNameTrafic in stationNameCoorLong or stationNameTrafic in stationNameCoorNomGare)):
-                
+             
                 icon=folium.Icon(color='white')
+                type = metro
                 if(datastationposition[station]['type'] == "RER"):
                      icon=folium.Icon(color='green', prefix='fa',icon='train')
-
+                     type=rer
                 else:
                     icon=folium.Icon(color='cadetblue', prefix='fa',icon='subway')
 
-                iframe = stationNameTrafic
-
                 folium.Marker(
-                location=datastationposition[station]['coordonnes'],
-                popup=datastationposition[station]['type']+" : "+str(datastationtrafic[trafic]['trafic']),
-                icon=icon
-                ).add_to(map)
+                         location=datastationposition[station]['coordonnes'],
+                         popup=datastationposition[station]['type']+" : "+str(datastationtrafic[trafic]['trafic']),
+                         icon=icon
+                         ).add_to(type)
 
+    rer.add_to(map)
+    metro.add_to(map)
+    folium.map.LayerControl('topright', collapsed=False).add_to(map)
     map.save(outfile='trafic-metro-rer.html')
     chrome_path = 'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe %s'
     webbrowser.get(chrome_path).open('trafic-metro-rer.html') 
