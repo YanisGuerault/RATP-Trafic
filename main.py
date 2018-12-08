@@ -131,7 +131,7 @@ def CreerGUI():
     ]
 
     mainw= Tk()
-    mainw.title('Trafic des stations RATP en 2017')
+    mainw.title('Trafic des stations RATP')
 
     anneeselect = StringVar()
     anneeselect.set(ANNEES[0])
